@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clause &amp; Query</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F3EC;
+    --paper-alt:#EFEAdd;
+    --ink:#1F2A44;
+    --rule:#D9D3C2;
+    --redline:#9B4032;
+    --redline-soft:#c97b64;
+    --moss:#3E6259;
+    --charcoal:#33302A;
+    --amber:#B98328;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--charcoal);
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:15px;
+    line-height:1.5;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 90px;}
+
+  /* Masthead */
+  .masthead{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:18px;
+    margin-bottom:6px;
+    gap:24px;
+  }
+  .masthead h1{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    font-size:34px;
+    margin:0;
+    color:var(--ink);
+    letter-spacing:-0.01em;
+  }
+  .masthead h1 span{color:var(--redline);font-style:italic;font-weight:500;}
+  .masthead .tagline{
+    max-width:320px;
+    text-align:right;
+    font-size:13px;
+    color:#6b6558;
+    line-height:1.45;
+  }
+  .subrule{
+    display:flex;
+    justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:#8a8474;
+    padding:8px 0 34px;
+    border-bottom:1px solid var(--rule);
+    margin-bottom:32px;
+  }
+
+  /* Upload zone */
+  .zone{
+    border:1.5px dashed #b9b09a;
+    background:var(--paper-alt);
+    padding:34px 28px;
+    display:flex;
+    align-items:center;
+    gap:26px;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .zone.drag{border-color:var(--redline);background:#f3e9e4;}
+  .zone .icon{
+    width:46px;height:58px;flex:none;
+    border:1.5px solid var(--ink);
+    position:relative;
+    background:var(--paper);
+  }
+  .zone .icon::before{
+    content:'';position:absolute;top:0;right:0;
+    width:0;height:0;
+    border-style:solid;
+    border-width:0 0 12px 12px;
+    border-color:transparent transparent var(--paper-alt) transparent;
+  }
+  .zone .icon::after{
+    content:'';position:absolute;top:0;right:0;
+    width:12px;height:0;
+    border-top:1.5px solid var(--ink);
+    transform:rotate(90deg) translate(6px,6px);
+  }
+  .zone-text h2{
+    font-family:'Source Serif 4',serif;
+    font-weight:600;
+    font-size:18px;
+    margin:0 0 4px;
+    color:var(--ink);
+  }
+  .zone-text p{margin:0;font-size:13px;color:#6b6558;}
+  .zone-text .formats{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--redline);
+    margin-top:6px;
+  }
+  .zone button{
+    margin-left:auto;
+    flex:none;
+  }
+  .btn{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13px;
+    font-weight:500;
+    padding:10px 18px;
+    background:var(--ink);
+    color:var(--paper);
+    border:1px solid var(--ink);
+    cursor:pointer;
+    letter-spacing:0.01em;
+  }
+  .btn:hover{background:#101a30;}
+  .btn:disabled{opacity:0.45;cursor:default;}
+  .btn.outline{background:transparent;color:var(--ink);}
+  .btn.outline:hover{background:var(--ink);color:var(--paper);}
+  .btn.redline{background:var(--redline);border-color:var(--redline);}
+  .btn.redline:hover{background:#7f3129;}
+  .btn.small{padding:6px 12px;font-size:12px;}
+
+  #fileInput{display:none;}
+
+  /* status / progress */
+  .status{
+    margin-top:18px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--moss);
+    min-height:18px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .status.err{color:var(--redline);}
+  .spinner{
+    width:11px;height:11px;
+    border:2px solid var(--rule);
+    border-top-color:var(--moss);
+    border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .progressbar{
+    height:3px;background:var(--rule);margin-top:10px;overflow:hidden;display:none;
+  }
+  .progressbar.show{display:block;}
+  .progressbar > div{
+    height:100%;background:var(--moss);width:0%;transition:width .3s ease;
+  }
+
+  /* toolbar */
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:38px 0 14px;
+    flex-wrap:wrap;
+  }
+  .toolbar .count{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:#8a8474;
+    margin-right:auto;
+  }
+  .toolbar input[type=text]{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13px;
+    padding:9px 12px;
+    border:1px solid var(--rule);
+    background:#fff;
+    min-width:200px;
+  }
+  .toolbar input[type=text]:focus{outline:1px solid var(--ink);}
+
+  /* table */
+  table{
+    width:100%;
+    border-collapse:collapse;
+    background:#fff;
+  }
+  thead th{
+    text-align:left;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    font-weight:500;
+    color:#6b6558;
+    padding:10px 12px;
+    border-top:1.5px solid var(--ink);
+    border-bottom:1.5px solid var(--ink);
+    letter-spacing:0.02em;
+  }
+  tbody tr{border-bottom:1px solid var(--rule);}
+  tbody tr:hover{background:#fbfaf6;}
+  td{
+    padding:12px;
+    vertical-align:top;
+    font-size:13.5px;
+  }
+  td.sr{
+    font-family:'IBM Plex Mono',monospace;
+    color:#9a947f;
+    width:34px;
+  }
+  td.clauseno{
+    font-family:'IBM Plex Mono',monospace;
+    color:var(--redline);
+    width:100px;
+    font-size:12.5px;
+  }
+  td.clausetext{
+    font-family:'Source Serif 4',serif;
+    font-style:italic;
+    color:#4a4638;
+    width:26%;
+    line-height:1.45;
+  }
+  td.query{width:30%;}
+  td.response{width:20%;}
+  td.rm{width:28px;text-align:center;}
+  .cell{
+    min-height:20px;
+    outline:none;
+    line-height:1.5;
+  }
+  .cell:focus{background:#fdf9f1;}
+  td.response .cell{
+    border:1px dashed #c9c2ac;
+    padding:6px 8px;
+    background:#fffdf8;
+    min-height:34px;
+    color:#8a8474;
+  }
+  td.response .cell:focus{color:var(--charcoal);border-color:var(--moss);}
+  td.response .cell:not(:empty){color:var(--charcoal);}
+  .rm-btn{
+    background:none;border:none;cursor:pointer;
+    color:#b9b09a;font-size:16px;line-height:1;
+    padding:0;
+  }
+  .rm-btn:hover{color:var(--redline);}
+
+  .empty{
+    padding:60px 20px;
+    text-align:center;
+    color:#9a947f;
+    font-family:'Source Serif 4',serif;
+    font-style:italic;
+    font-size:15px;
+    background:#fff;
+    border-top:1.5px solid var(--ink);
+    border-bottom:1.5px solid var(--ink);
+  }
+
+  footer{
+    margin-top:28px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:#a39c86;
+    text-align:right;
+  }
+
+  @media (max-width:720px){
+    .masthead{flex-direction:column;align-items:flex-start;}
+    .masthead .tagline{text-align:left;}
+    .zone{flex-wrap:wrap;}
+    .zone button{margin-left:0;}
+    td.clausetext,td.query,td.response{width:auto;}
+    table, thead, tbody, th, td, tr{display:block;}
+    thead{display:none;}
+    tbody tr{padding:14px 0;}
+    td{padding:4px 0;}
+    td.clauseno::before{content:'Clause  ';color:#9a947f;}
+    td.query::before{content:'Query';display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9a947f;margin-bottom:3px;}
+    td.response::before{content:'Response';display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#9a947f;margin-bottom:3px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <h1>Clause <span>&amp;</span> Query</h1>
+    <div class="tagline">Upload an RFP or requirement document. Get back a technical &amp; cloud infrastructure query sheet, clause by clause, ready for the client to answer.</div>
+  </div>
+  <div class="subrule">
+    <span>RFP QUERY WORKSHEET GENERATOR</span>
+    <span id="docLabel">NO DOCUMENT LOADED</span>
+  </div>
+
+  <div class="zone" id="dropzone">
+    <div class="icon"></div>
+    <div class="zone-text">
+      <h2>Drop your RFP or requirement document</h2>
+      <p>It will be scanned clause‑by‑clause for technical, DC/DR, security and cloud‑infrastructure requirements.</p>
+      <div class="formats">.PDF · .DOCX · .XLSX / .XLS</div>
+    </div>
+    <button class="btn" id="browseBtn">Choose file</button>
+    <input type="file" id="fileInput" accept=".pdf,.docx,.xlsx,.xls">
+  </div>
+  <div class="status" id="status"></div>
+  <div class="progressbar" id="progressbar"><div id="progressfill"></div></div>
+
+  <div class="toolbar">
+    <div class="count" id="rowCount">0 queries</div>
+    <input type="text" id="filterInput" placeholder="Filter by clause no. or keyword…">
+    <button class="btn outline small" id="addStandardBtn">Add standard checklist</button>
+    <button class="btn outline small" id="addRowBtn">Add row</button>
+    <button class="btn redline small" id="exportBtn">Export to Excel</button>
+  </div>
+
+  <div id="tableHolder"></div>
+
+  <footer>Response column is left blank for the client to complete.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  if (window['pdfjs-dist/build/pdf']) { /* noop */ }
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+})();
+
+/* ---------------- state ---------------- */
+let rows = [];
+let rowSeq = 1;
+
+/* ---------------- reference query bank (from the client-supplied query set) ---------------- */
+const STANDARD_BANK = [
+"Please share DC infrastructure details including VM configuration (vCPU, RAM, Storage), OS versions for app/DB, firewall and WAF throughput, load balancer specs, public IP count, required bandwidth/links (MPLS/P2P/ILL), redundancy, storage IOPS/block size, processor requirement, VPN needs, and daily data generation.",
+"Please confirm whether DR is required and its sizing (e.g., 100% or 50% of DC), expected RTO/RPO, number of DR drills per year, DR public IPs, and any DRM/tooling expectations.",
+"Please confirm the number of concurrent users expected to access the setup at peak.",
+"Please provide the expected total unique users per day to size capacity and network appropriately.",
+"Please list project milestones and dates (e.g., kickoff, MVP, UAT, go‑live).",
+"Please share the phase‑wise delivery plan with dependencies, acceptance points, and transitions.",
+"Please confirm the target go‑live date and any hard regulatory or business deadlines.",
+"Please define penalties for delivery delays and SLA breaches, including rates, caps, and termination/forfeiture triggers.",
+"Please specify availability targets, response and resolution times, and incident/security handling with measurement and reporting.",
+"Please state the EMD amount, payment mode/timing, exemptions if any, and refund timelines/conditions.",
+"Please state the PBG value/percentage, submission timeline, validity, and forfeiture conditions.",
+"Please share the sanctioned budget or acceptable range and any fiscal‑year constraints.",
+"Please confirm the bid submission deadline and required format.",
+"Please confirm the pre‑bid meeting date/time, mode, and clarification process.",
+"Please detail cloud/DC requirements including OS and DB versions/editions, total VM count, load balancer needs, bandwidth, IPs, architecture, and required security components.",
+"Please specify performance/throughput/latency targets, availability objectives, storage IOPS/block size, and security expectations.",
+"Please specify scope, evidence, and frequency of security audits, including audit trails for sensitive services.",
+"Please specify MFA use cases, deployment points, and the number of users who will avail MFA services.",
+"Please confirm SSO requirements, supported protocols/IdPs (e.g., SAML/OIDC), and access management expectations.",
+"Please confirm SSL certificate types per domain (domain/organization/wildcard/EV) and quantities.",
+"Please confirm whether payment gateway integration is required and specify providers, compliance, and payment methods.",
+"Please confirm Aadhaar integration scope (Authentication/e‑KYC), AUA/KUA/ASA onboarding, API type (OTP/biometrics), encryption, and audit compliance per UIDAI specs.",
+"Please confirm SMS gateway requirement, expected volumes/throughput, and use cases (OTP/alerts/notifications).",
+"Please confirm mailbox count, per‑mailbox size, SMTP service need, and total email IDs.",
+"Please specify onsite roles, counts, skills, duration, and working model.",
+"Please define scope and duration of post‑go‑live handholding/hypercare support.",
+"Please specify training batch counts, mode (onsite/online), location, infra/bandwidth responsibility, and day‑wise schedule.",
+"Please share migration scope including hypervisor details, VM count and nature, app/DB versions, total one‑time data size, wave plan, roles/responsibilities, and payment methodology.",
+"Please confirm onsite presence expectations during implementation, cutover, and operations (residency/shift coverage).",
+"Please confirm AMC scope, duration, coverage (hardware/software), and response/resolution commitments.",
+"Please define O&M responsibilities, staffing, hours of coverage, and performance expectations post go‑live.",
+"Please list expected deliverables across phases (designs, configs, code, test plans/reports, runbooks, training, acceptance artifacts).",
+"Please specify documentation standards, formats, and versioning for architecture, security, operations, and training.",
+"Please confirm multilingual UI/content requirements and enumerate languages to be supported.",
+"Please define KPIs and acceptance criteria used to evaluate project success and vendor performance.",
+"Please confirm analytics/dashboard scope, data sources, and reporting cadence.",
+"Please define the roles/permissions model, RBAC scope, and admin/governance requirements.",
+"Please specify monitoring, logging, and tracing (telemetry) requirements with retention and alerting.",
+"Please describe the current environment, application flow, and components across DC/DR.",
+"Please outline preferred/target technologies, cloud services, and architecture standards.",
+"Please confirm chatbot scope, channels, language/NLP needs, and integration points.",
+"Please confirm IVR scope, call flows, telephony integration, and reporting needs.",
+"Please define types of technical/security audits required (scope, evidence, timelines) and their frequency.",
+"Please confirm target Recovery Time Objective (RTO) and Recovery Point Objective (RPO) for applications, services and data.",
+"Please specify required DC/DR seismic zone compliance and siting constraints.",
+"Please confirm payment type (fixed price, T&M, milestone‑based), linked acceptance criteria, payout schedule, invoicing cadence, and retention/holdback terms.",
+"Please confirm if backup is required, total backup space at DC/DR sites, backup policy (incremental/daily, weekly/monthly full), retention, media, and number of endpoints.",
+"Please provide current total data size and daily incremental size for migration, bandwidth, and backup sizing.",
+"Kindly share VM configuration (vCPU, RAM, Storage) and confirm OS version/edition for App and DB servers, including latest patch level.",
+"Kindly provide the required firewall and WAF throughput so appropriately sized devices can be selected.",
+"Kindly provide database version and edition details (Community/Enterprise) and confirm who provisions/manages licenses.",
+"Kindly confirm required load balancer throughput/specifications and whether a Global Load Balancer is needed.",
+"Kindly confirm if VPN is required; if yes, provide approximate SSL VPN and IPsec VPN user counts for Windows and Linux.",
+"Kindly mention how many public IPs are required at DC and DR.",
+"Kindly confirm any link terminating to the DC (P2P/MPLS/ILL) and its required size/bandwidth.",
+"Kindly specify storage IOPS with block size, and confirm whether cores are physical or virtual.",
+"Kindly confirm the security components required (Firewall, WAF, SSL, Antivirus+HIPS, SIEM, DDoS, IDS/IPS).",
+"Kindly confirm mode of access for users to this setup: MPLS, VPN, or Internet, and the required bandwidth.",
+"Kindly confirm whether DC licenses can be used in DR and whether Software Assurance exists for DC DB and OS licenses.",
+"Kindly confirm whether a DRM tool is required for all VMs or only DB servers, and what is needed to meet RTO/RPO.",
+"Kindly share existing hypervisor details and confirm applications/databases to be migrated wave‑wise, including versions, size and instance count.",
+"As migration services have associated costs, please confirm the payment methodology for these migration services."
+];
+
+/* ---------------- helpers ---------------- */
+const $ = (id)=>document.getElementById(id);
+const statusEl = $('status');
+const progressbar = $('progressbar');
+const progressfill = $('progressfill');
+
+function setStatus(msg, isErr, showSpinner){
+  statusEl.classList.toggle('err', !!isErr);
+  statusEl.innerHTML = (showSpinner ? '<span class="spinner"></span>' : '') + (msg||'');
+}
+function setProgress(pct){
+  if(pct===null){progressbar.classList.remove('show');return;}
+  progressbar.classList.add('show');
+  progressfill.style.width = pct+'%';
+}
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+/* ---------------- rendering ---------------- */
+function render(){
+  const holder = $('tableHolder');
+  const filter = $('filterInput').value.trim().toLowerCase();
+  const visible = rows.filter(r=>{
+    if(!filter) return true;
+    return (r.clauseNo+' '+r.clauseText+' '+r.query).toLowerCase().includes(filter);
+  });
+  $('rowCount').textContent = rows.length + (rows.length===1?' query':' queries') + (filter && visible.length!==rows.length ? ' · '+visible.length+' shown' : '');
+
+  if(visible.length===0){
+    holder.innerHTML = '<div class="empty">'+(rows.length===0 ? 'No queries yet — upload a document, or add the standard checklist.' : 'No queries match that filter.')+'</div>';
+    return;
+  }
+
+  let html = '<table><thead><tr>'+
+    '<th>Sr</th><th>Clause No.</th><th>Clause / Requirement</th><th>Query</th><th>Response</th><th></th>'+
+    '</tr></thead><tbody>';
+
+  visible.forEach((r, i)=>{
+    html += '<tr data-id="'+r.id+'">'+
+      '<td class="sr">'+(i+1)+'</td>'+
+      '<td class="clauseno"><div class="cell" contenteditable="true" data-field="clauseNo">'+escapeHtml(r.clauseNo)+'</div></td>'+
+      '<td class="clausetext"><div class="cell" contenteditable="true" data-field="clauseText">'+escapeHtml(r.clauseText)+'</div></td>'+
+      '<td class="query"><div class="cell" contenteditable="true" data-field="query">'+escapeHtml(r.query)+'</div></td>'+
+      '<td class="response"><div class="cell" contenteditable="true" data-field="response" data-placeholder="Awaiting client response">'+escapeHtml(r.response)+'</div></td>'+
+      '<td class="rm"><button class="rm-btn" title="Remove row">×</button></td>'+
+      '</tr>';
+  });
+  html += '</tbody></table>';
+  holder.innerHTML = html;
+
+  holder.querySelectorAll('.cell').forEach(cell=>{
+    cell.addEventListener('input', ()=>{
+      const tr = cell.closest('tr');
+      const id = tr.getAttribute('data-id');
+      const row = rows.find(r=>r.id===id);
+      if(row) row[cell.getAttribute('data-field')] = cell.textContent;
+    });
+  });
+  holder.querySelectorAll('.rm-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const tr = btn.closest('tr');
+      const id = tr.getAttribute('data-id');
+      rows = rows.filter(r=>r.id!==id);
+      render();
+    });
+  });
+}
+
+function addRow(clauseNo, clauseText, query, response){
+  rows.push({id:'r'+(rowSeq++), clauseNo:clauseNo||'', clauseText:clauseText||'', query:query||'', response:response||''});
+}
+
+/* ---------------- file extraction ---------------- */
+async function extractText(file){
+  const name = file.name.toLowerCase();
+  if(name.endsWith('.pdf')) return extractPdf(file);
+  if(name.endsWith('.docx')) return extractDocx(file);
+  if(name.endsWith('.xlsx') || name.endsWith('.xls')) return extractSheet(file);
+  throw new Error('Unsupported file type. Please upload a .pdf, .docx, .xlsx or .xls file.');
+}
+
+async function extractPdf(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({data: buf}).promise;
+  let text = '';
+  for(let p=1; p<=pdf.numPages; p++){
+    setStatus('Extracting text — page '+p+' of '+pdf.numPages+'…', false, true);
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(it=>it.str).join(' ');
+    text += '\n[Page '+p+']\n'+pageText+'\n';
+  }
+  return text;
+}
+
+async function extractDocx(file){
+  const buf = await file.arrayBuffer();
+  const result = await window.mammoth.extractRawText({arrayBuffer: buf});
+  return result.value;
+}
+
+async function extractSheet(file){
+  const buf = await file.arrayBuffer();
+  const wb = window.XLSX.read(buf, {type:'array'});
+  let text = '';
+  wb.SheetNames.forEach(name=>{
+    const sheet = wb.Sheets[name];
+    text += '\n[Sheet: '+name+']\n' + window.XLSX.utils.sheet_to_csv(sheet) + '\n';
+  });
+  return text;
+}
+
+/* ---------------- chunking ---------------- */
+function chunkText(text, maxLen){
+  maxLen = maxLen || 3200;
+  const paras = text.split(/\n{1,}/).map(p=>p.trim()).filter(Boolean);
+  const chunks = [];
+  let cur = '';
+  for(const p of paras){
+    if((cur+'\n'+p).length > maxLen && cur.length>0){
+      chunks.push(cur);
+      cur = p;
+    } else {
+      cur = cur ? cur+'\n'+p : p;
+    }
+    if(cur.length > maxLen*1.6){
+      chunks.push(cur);
+      cur = '';
+    }
+  }
+  if(cur.trim()) chunks.push(cur);
+  return chunks.length ? chunks : [text];
+}
+
+/* ---------------- Claude analysis ---------------- */
+const SYSTEM_PROMPT = `You are a technical bid analyst who prepares pre-bid query sheets for government / PSU cloud and IT infrastructure tenders (RFPs). You review a section of an RFP or requirement document and pull out clauses that are technically ambiguous, under-specified, or missing details a bidder needs in order to size infrastructure, cloud, security, SLA, migration or commercial terms correctly.
+
+For each such clause, produce one object with:
+- "clause_no": the clause/section/article number or heading exactly as it appears near that requirement (e.g. "3.2", "Annexure B - Item 4", "Section 5.1"). If no explicit number/heading is present nearby, use "N/A".
+- "clause_text": a short excerpt (max ~35 words) taken from the document itself that captures the specific requirement being queried. Do not paraphrase this — lift it from the text.
+- "query": a precise, professionally worded clarification question a bidder would raise with the client, in the style of formal RFP pre-bid queries. Focus on technical / cloud / infrastructure / security / SLA / data-migration / commercial specificity — e.g. asking for exact figures, versions, counts, thresholds, or responsibilities that the clause leaves vague.
+
+Reference examples of the tone and specificity expected (do not copy these verbatim, use them only as a style guide — generate queries grounded in the actual document section you are given):
+${STANDARD_BANK.slice(0,25).map(q=>'- '+q).join('\n')}
+
+Rules:
+- Only flag clauses with genuine technical ambiguity or missing specification worth querying. Skip generic boilerplate, eligibility criteria, legal formalities unrelated to technical/infra scope, and clauses that are already fully specified.
+- It is fine to return an empty array if the given section has nothing worth querying.
+- Respond with ONLY a raw JSON array of objects with keys clause_no, clause_text, query. No markdown code fences, no commentary, no surrounding text.`;
+
+async function callClaude(chunk){
+  const body = {
+    model: "claude-sonnet-4-6",
+    max_tokens: 1000,
+    system: SYSTEM_PROMPT,
+    messages: [
+      {role:"user", content: "RFP document section to analyze:\n\n" + chunk}
+    ]
+  };
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(body)
+  });
+  if(!resp.ok){
+    throw new Error('API error ('+resp.status+')');
+  }
+  const data = await resp.json();
+  const textBlocks = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  let clean = textBlocks.trim();
+  clean = clean.replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  const firstBracket = clean.indexOf('[');
+  const lastBracket = clean.lastIndexOf(']');
+  if(firstBracket !== -1 && lastBracket !== -1) clean = clean.slice(firstBracket, lastBracket+1);
+  try{
+    const parsed = JSON.parse(clean);
+    if(Array.isArray(parsed)) return parsed;
+    return [];
+  }catch(e){
+    return [];
+  }
+}
+
+async function analyzeDocument(text){
+  const chunks = chunkText(text);
+  let total = chunks.length;
+  let found = 0;
+  setProgress(0);
+  for(let i=0;i<chunks.length;i++){
+    setStatus('Analyzing section '+(i+1)+' of '+total+' for technical &amp; cloud queries…', false, true);
+    setProgress(Math.round((i/total)*100));
+    try{
+      const items = await callClaude(chunks[i]);
+      items.forEach(it=>{
+        if(it && (it.query || it.clause_text)){
+          addRow(it.clause_no||'N/A', it.clause_text||'', it.query||'', '');
+          found++;
+        }
+      });
+      render();
+    }catch(e){
+      console.error(e);
+    }
+  }
+  setProgress(100);
+  setTimeout(()=>setProgress(null), 600);
+  if(found===0){
+    setStatus('No technical clauses needing clarification were detected. You can add the standard checklist or rows manually below.', false, false);
+  } else {
+    setStatus(found+' quer'+(found===1?'y':'ies')+' generated from the document.', false, false);
+  }
+}
+
+/* ---------------- upload wiring ---------------- */
+const dropzone = $('dropzone');
+const fileInput = $('fileInput');
+
+$('browseBtn').addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', (e)=>{
+  if(e.target.files[0]) handleFile(e.target.files[0]);
+});
+['dragenter','dragover'].forEach(evt=>{
+  dropzone.addEventListener(evt, (e)=>{e.preventDefault(); dropzone.classList.add('drag');});
+});
+['dragleave','drop'].forEach(evt=>{
+  dropzone.addEventListener(evt, (e)=>{e.preventDefault(); dropzone.classList.remove('drag');});
+});
+dropzone.addEventListener('drop', (e)=>{
+  const f = e.dataTransfer.files[0];
+  if(f) handleFile(f);
+});
+
+async function handleFile(file){
+  $('docLabel').textContent = file.name.toUpperCase();
+  try{
+    setStatus('Reading '+file.name+'…', false, true);
+    const text = await extractText(file);
+    if(!text || text.trim().length < 20){
+      setStatus('Could not find readable text in this file. If it is a scanned PDF, try a text-based export instead.', true, false);
+      return;
+    }
+    await analyzeDocument(text);
+  }catch(err){
+    console.error(err);
+    setStatus(err.message || 'Something went wrong while reading that file.', true, false);
+  }
+}
+
+/* ---------------- toolbar actions ---------------- */
+$('addStandardBtn').addEventListener('click', ()=>{
+  STANDARD_BANK.forEach(q=>{
+    addRow('Standard', 'General technical requirement — not tied to a specific clause in this document.', q, '');
+  });
+  render();
+});
+$('addRowBtn').addEventListener('click', ()=>{
+  addRow('', '', '', '');
+  render();
+});
+$('filterInput').addEventListener('input', render);
+
+$('exportBtn').addEventListener('click', ()=>{
+  if(rows.length===0){
+    setStatus('There are no queries yet to export.', true, false);
+    return;
+  }
+  const aoa = [['Sr No','Clause No.','Clause / Requirement','Query','Response']];
+  rows.forEach((r,i)=>{
+    aoa.push([i+1, r.clauseNo, r.clauseText, r.query, r.response]);
+  });
+  const ws = window.XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:5},{wch:14},{wch:45},{wch:55},{wch:35}];
+  const wb = window.XLSX.utils.book_new();
+  window.XLSX.utils.book_append_sheet(wb, ws, 'Technical Queries');
+  window.XLSX.writeFile(wb, 'RFP_Technical_Queries.xlsx');
+});
+
+render();
+</script>
+</body>
+</html>
