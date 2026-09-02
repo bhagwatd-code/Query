@@ -327,7 +327,7 @@
 
   <div id="tableHolder"></div>
 
-  <footer>Response column is left blank for the client to complete.</footer>
+  <footer>Response column is left blank for the client to complete. <span style="opacity:.6;">· build v1.3</span></footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -613,7 +613,7 @@ async function callClaude(chunk){
     if(RUNNING_FROM_FILE){
       throw new Error('Blocked because this page is open as a local file (see the notice above) — reopen it inside Claude\'s artifact panel.');
     }
-    throw new Error('Network error reaching the analysis API: '+networkErr.message);
+    throw new Error('Network error reaching the analysis API: '+networkErr.message+' [protocol: '+window.location.protocol+', online: '+navigator.onLine+']');
   }
   if(!resp.ok){
     let detail = '';
